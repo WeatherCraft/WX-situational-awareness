@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WX SITREP — Severe Weather Situational Awareness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- SCANLINE OVERLAY -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settings-panel" class="settings-panel hidden">
+    <div class="settings-header">
+      <span class="settings-title">⚙ ALERT SETTINGS</span>
+      <button id="settings-close" class="settings-close" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
+      <p class="settings-desc">Enable audio + visual pings for new alerts:</p>
+      <label class="setting-row">
+        <input type="checkbox" id="ping-pds" class="ping-toggle" data-type="PDS" />
+        <span class="setting-badge pds">PDS</span>
+        <span class="setting-label">Particularly Dangerous Situation</span>
+      </label>
+      <label class="setting-row">
+        <input type="checkbox" id="ping-tor" class="ping-toggle" data-type="TOR" />
+        <span class="setting-badge tor">TOR</span>
+        <span class="setting-label">Tornado Warning</span>
+      </label>
+      <label class="setting-row">
+        <input type="checkbox" id="ping-svr" class="ping-toggle" data-type="SVR" />
+        <span class="setting-badge svr">SVR</span>
+        <span class="setting-label">Severe Thunderstorm Warning</span>
+      </label>
+      <label class="setting-row">
+        <input type="checkbox" id="ping-torffw" class="ping-toggle" data-type="TOR/FFW-E" />
+        <span class="setting-badge torffw">TOR/FFW-E</span>
+        <span class="setting-label">Tornado + Flash Flood Emergency</span>
+      </label>
+      <div class="settings-divider"></div>
+      <button id="compact-toggle" class="compact-btn">
+        <span id="compact-icon">⊡</span> COMPACT MODE (Widescreen)
+      </button>
+      <div class="settings-divider"></div>
+      <div class="settings-info">
+        <span>Data: NWS / SPC / Iowa State Mesonet</span><br/>
+        <span>Radar: Iowa State RIDGE2</span>
+      </div>
+    </div>
+  </div>
+  <div id="settings-overlay" class="settings-overlay hidden"></div>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- HEADER -->
+  <header class="site-header" id="site-header">
+    <div class="header-left">
+      <button id="settings-btn" class="settings-btn" aria-label="Open settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="header-center">
+      <div class="site-logo">
+        <span class="logo-wx">WX</span><span class="logo-sep">▸</span><span class="logo-sitrep">SITREP</span>
+      </div>
+      <div class="header-tagline">SEVERE WEATHER SITUATIONAL AWARENESS</div>
+    </div>
+    <div class="header-right">
+      <div class="clock-block">
+        <div id="utc-clock" class="utc-clock">--:--:-- Z</div>
+        <div id="local-clock" class="local-clock">--:--:-- LCL</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="site-main" id="site-main">
+
+    <!-- SPC OUTLOOK STRIP -->
+    <section class="outlook-strip" id="outlook-strip">
+      <div class="outlook-label">SPC OUTLOOKS</div>
+      <div class="outlook-cards">
+        <div class="outlook-card" id="day1-cat">
+          <div class="outlook-day">DAY 1</div>
+          <div class="outlook-type">CATEGORICAL</div>
+          <div class="outlook-value loading" id="d1-cat-val">—</div>
+        </div>
+        <div class="outlook-card" id="day1-tor">
+          <div class="outlook-day">DAY 1</div>
+          <div class="outlook-type">TORNADO</div>
+          <div class="outlook-value loading" id="d1-tor-val">—</div>
+        </div>
+        <div class="outlook-card" id="day2-cat">
+          <div class="outlook-day">DAY 2</div>
+          <div class="outlook-type">CATEGORICAL</div>
+          <div class="outlook-value loading" id="d2-cat-val">—</div>
+        </div>
+        <div class="outlook-card" id="day2-tor">
+          <div class="outlook-day">DAY 2</div>
+          <div class="outlook-type">TORNADO</div>
+          <div class="outlook-value loading" id="d2-tor-val">—</div>
+        </div>
+        <div class="outlook-card" id="day3-cat">
+          <div class="outlook-day">DAY 3</div>
+          <div class="outlook-type">CATEGORICAL</div>
+          <div class="outlook-value loading" id="d3-cat-val">—</div>
+        </div>
+        <div class="outlook-card" id="day3-tor">
+          <div class="outlook-day">DAY 3</div>
+          <div class="outlook-type">TORNADO</div>
+          <div class="outlook-value loading" id="d3-tor-val">—</div>
+        </div>
+      </div>
+      <div class="outlook-updated">Updated: <span id="outlook-ts">fetching…</span></div>
+    </section>
+
+    <!-- GRID: ALERTS + RADAR + REPORTS -->
+    <div class="content-grid" id="content-grid">
+
+      <!-- ACTIVE ALERTS -->
+      <section class="panel alerts-panel" id="alerts-panel">
+        <div class="panel-header">
+          <span class="panel-title">ACTIVE ALERTS</span>
+          <span class="panel-badge" id="alert-count">0</span>
+          <span class="panel-updated" id="alerts-ts">—</span>
+          <button class="refresh-btn" id="refresh-alerts" aria-label="Refresh alerts">↻</button>
+        </div>
+        <div class="alert-filters">
+          <button class="filter-btn active" data-filter="ALL">ALL</button>
+          <button class="filter-btn" data-filter="PDS">PDS</button>
+          <button class="filter-btn" data-filter="TOR">TOR</button>
+          <button class="filter-btn" data-filter="SVR">SVR</button>
+          <button class="filter-btn" data-filter="FFW">FFW</button>
+          <button class="filter-btn" data-filter="SPS">SPS</button>
+        </div>
+        <div class="alerts-list" id="alerts-list">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <span>Fetching alerts…</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RADAR -->
+      <section class="panel radar-panel" id="radar-panel">
+        <div class="panel-header">
+          <span class="panel-title">NATIONAL RADAR MOSAIC</span>
+          <span class="radar-controls">
+            <button class="radar-btn active" id="radar-bref">REFL</button>
+            <button class="radar-btn" id="radar-rvel">VEL</button>
+          </span>
+          <span class="panel-updated" id="radar-ts">Live</span>
+        </div>
+        <div class="radar-container" id="radar-container">
+          <img
+            id="radar-img"
+            class="radar-img"
+            src="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/6/16/24.png"
+            alt="National radar mosaic"
+            crossorigin="anonymous"
+          />
+          <div class="radar-overlay-map"></div>
+          <div class="radar-timestamp" id="radar-loop-ts"></div>
+        </div>
+        <div class="radar-legend">
+          <span class="legend-label">DBZ:</span>
+          <div class="legend-bar"></div>
+          <span class="legend-lo">5</span>
+          <span class="legend-hi">75+</span>
+        </div>
+        <!-- Embedded Leaflet map for real interactive radar -->
+        <div id="radar-map" class="radar-map-container"></div>
+      </section>
+
+      <!-- WEATHER REPORTS -->
+      <section class="panel reports-panel" id="reports-panel">
+        <div class="panel-header">
+          <span class="panel-title">STORM REPORTS</span>
+          <span class="panel-badge" id="reports-count">0</span>
+          <span class="panel-updated" id="reports-ts">—</span>
+          <button class="refresh-btn" id="refresh-reports" aria-label="Refresh reports">↻</button>
+        </div>
+        <div class="report-filters">
+          <button class="filter-btn active" data-filter="ALL">ALL</button>
+          <button class="filter-btn" data-filter="TORNADO">TORNADO</button>
+          <button class="filter-btn" data-filter="HAIL">HAIL</button>
+          <button class="filter-btn" data-filter="WIND">WIND</button>
+        </div>
+        <div class="reports-list" id="reports-list">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <span>Fetching reports…</span>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content-grid -->
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <span>WX SITREP — Data: NWS / SPC / Iowa Mesonet · Not for life-safety decisions · Always follow official guidance</span>
+  </footer>
+
+  <!-- AUDIO CONTEXT for pings -->
+  <audio id="ping-audio" preload="auto"></audio>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="js/app.js"></script>
+</body>
+</html>
